@@ -1,0 +1,132 @@
+<style>
+  table,
+  th,
+  td {
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+  th,
+  td {
+    padding: 10px;
+    vertical-align: middle;
+  }
+  .center {
+    text-align: center;
+  }
+</style>
+
+<h1>Coronavirus Spain</h1>
+<h2><a href="http://kutt.it/spaincoronavirus">kutt.it/spaincoronavirus</a></h2>
+
+<br />
+
+<table style="width: 100%;">
+  <tr>
+    <th>Diagnosticados</th>
+    <th>Activos</th>
+    <th>Muertes</th>
+    <th>Recuperados</th>
+  </tr>
+  <tr class="center">
+    <td id="diagnosticados"></td>
+    <td id="activos"></td>
+    <td id="muertes"></td>
+    <td id="recuperados"></td>
+  </tr>
+</table>
+
+<br />
+
+<table id="tableCiudades" style="width: 100%;">
+  <tr>
+    <th>Ciudad</th>
+    <th>Diagnosticados</th>
+    <th>Activos</th>
+    <th>Muertes</th>
+    <th>Recuperados</th>
+  </tr>
+</table>
+
+<br>
+
+<label
+  >Fuente de datos:
+  <a href="https://www.rtve.es/noticias/20200308/mapa-del-coronavirus-espana/2004681.shtml">RTVE</a></label
+>
+<iframe
+  src="https://public.flourish.studio/visualisation/1451263/embed"
+  frameborder="0"
+  scrolling="no"
+  height="575"
+  width="700"
+  style="width:100%;"
+></iframe>
+<script>
+  const csvStringToArray = strData => {
+    const objPattern = new RegExp(
+      '(\\,|\\r?\\n|\\r|^)(?:"([^"]*(?:""[^"]*)*)"|([^\\,\\r\\n]*))',
+      "gi"
+    );
+    let arrMatches = null,
+      arrData = [[]];
+    while ((arrMatches = objPattern.exec(strData))) {
+      if (arrMatches[1].length && arrMatches[1] !== ",") arrData.push([]);
+      arrData[arrData.length - 1].push(
+        arrMatches[2]
+          ? arrMatches[2].replace(new RegExp('""', "g"), '"')
+          : arrMatches[3]
+      );
+    }
+    return arrData;
+  };
+
+  const zeroIfNull = num => {
+      return num ? num : 0;
+  }
+
+  var diagnosticados = document.getElementById("diagnosticados");
+  var activos = document.getElementById("activos");
+  var muertes = document.getElementById("muertes");
+  var recuperados = document.getElementById("recuperados");
+  var tableCiudades = document.getElementById("tableCiudades");
+
+  const getDataAndParse = async () => {
+    const response = await fetch(
+      "https://cors-anywhere.herokuapp.com/https://app.flourish.studio/api/data_table/2218280/csv"
+    );
+    const csv = await response.text();
+    const data = csvStringToArray(csv).slice(1);
+
+    data.sort((a,b) => zeroIfNull(parseInt(b[4])) - zeroIfNull(parseInt(a[4])));
+
+    var totalDiagnosticados = 0;
+    var totalActivos = 0;
+    var totalMuertes = 0;
+    var totalRecuperados = 0;
+
+    data.forEach((entry, i) => {
+      entryDiag = zeroIfNull(parseInt(entry[4]));
+      entryAct = zeroIfNull(parseInt(entry[5]));
+      entryRec = zeroIfNull(parseInt(entry[6]));
+      entryMuer = zeroIfNull(parseInt(entry[7]));
+
+      totalDiagnosticados += entryDiag;
+      totalActivos += entryAct;
+      totalRecuperados += entryRec;
+      totalMuertes += entryMuer;
+
+      newRow = tableCiudades.insertRow(-1);
+      newRow.insertCell(0).appendChild(document.createTextNode(entry[0]));
+      newRow.insertCell(1).appendChild(document.createTextNode(entryDiag));
+      newRow.insertCell(2).appendChild(document.createTextNode(entryAct));
+      newRow.insertCell(3).appendChild(document.createTextNode(entryMuer));
+      newRow.insertCell(4).appendChild(document.createTextNode(entryRec));
+    });
+
+    diagnosticados.innerHTML = totalDiagnosticados;
+    activos.innerHTML = totalActivos;
+    muertes.innerHTML = totalMuertes;
+    recuperados.innerHTML = totalRecuperados;
+  };
+  getDataAndParse();
+</script>
